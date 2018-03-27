@@ -9,7 +9,7 @@ import (
 // JsonObject
 type JSONObject struct {
 	Value interface {}
-	// underline struct type
+	// underlying struct type
 	T reflect.Type
 }
 // NewJSONObject create a new json object, then

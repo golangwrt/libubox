@@ -22,7 +22,7 @@ import (
 
 // BlobBuf encapsulates struct blob_buf
 type BlobBuf struct {
-	ptr *C.struct_blob_buf
+	ptr  *C.struct_blob_buf
 	head *BlobAttr
 }
 
@@ -338,13 +338,16 @@ func (attr *BlobAttr) GetU8() uint8 {
 // FormatJSON encapsulate blobmsg_format_json
 // char *blobmsg_format_json(struct blob_attr *attr, bool list)
 func (attr *BlobAttr) FormatJSON(list bool) string {
+	if attr == nil {
+		return "{}"
+	}
 	cstr, err := C.blobmsg_format_json(attr.ptr, C.bool(list))
 	if cstr != nil {
 		defer C.free(unsafe.Pointer(cstr))
 		return C.GoString(cstr)
 	} else {
 		fmt.Fprintf(os.Stderr, "blobmsg_format_json return NULL, %s\n", err)
-		return ""
+		return "{}"
 	}
 }
 
@@ -371,7 +374,11 @@ func (attr *BlobAttr) Unmarshal(obj interface{}) error {
 	return nil
 }
 
-// Pointer return the underlying *C.struct_blob_attr
+// Pointer return the underlying *C.struct_blob_attr as unsafe.Pointer
+//
+// PS. it's meaningless to return *C.struct_blob_attr as in CGO of other package,
+// the type will be libubox.*C.struct_blob_attr, and can not use directly without
+// type conversion.
 func (attr *BlobAttr) Pointer() unsafe.Pointer {
 	return unsafe.Pointer(attr.ptr)
 }
@@ -382,4 +389,3 @@ func NewBlobAttrFromPointer(ptr unsafe.Pointer) *BlobAttr {
 		ptr: (*C.struct_blob_attr)(ptr),
 	}
 }
-
