@@ -45,7 +45,7 @@ type UFDReadElem struct {
 // UloopFD encapsulates struct uloop_fd
 type UloopFD struct {
 	ptr *C.struct_uloop_fd
-	h   UloopFDHandler
+	H   UloopFDHandler
 }
 
 var (
@@ -90,13 +90,10 @@ func UloopDone() error {
 }
 
 // NewUloopFD created an *UloopFD, and set the underlying
-// UloopFDHandler to specified value
+// UloopFDHandler (field H) to specified value
 func NewUloopFD(fd int, h UloopFDHandler) *UloopFD {
-	if h == nil {
-		return nil
-	}
 	ufd := &UloopFD{
-		h: h,
+		H: h,
 	}
 	ufd.ptr = (*C.struct_uloop_fd)(C.calloc(1, C.sizeof_struct_uloop_fd))
 	ufd.ptr.cb = C.uloop_fd_handler(C.uloop_fd_cb)
@@ -137,7 +134,7 @@ func (ufd *UloopFD) Delete() error {
 	C.free(unsafe.Pointer(ufd.ptr))
 
 	ufd.ptr = nil
-	ufd.h = nil
+	ufd.H = nil
 
 	return nil
 }
@@ -164,6 +161,10 @@ func (ufd *UloopFD) Read() *UFDReadElem {
 	}
 }
 
+func (ufd *UloopFD) FD() int {
+	return int(ufd.ptr.fd)
+}
+
 func (ufd *UloopFD) Write(data []byte) (n int, err error) {
 	return syscall.Write(int(ufd.ptr.fd), data)
 }
@@ -174,10 +175,12 @@ func uloopFDHandlerProxy(ptr *C.struct_uloop_fd, events C.uint) {
 	ufd, found := ufds.Elem[ptr]
 	ufds.RUnlock()
 	if !found {
-		fmt.Fprintf(os.Stderr, "non ufd found for uloop_fd %ptr\n", ptr)
+		fmt.Fprintf(os.Stderr, "non ufd found for uloop_fd %p, fd: %d\n", ptr, int(ptr.fd))
 		return
 	}
-	ufd.h(ufd, uint(events))
+	if ufd.H != nil {
+		ufd.H(ufd, uint(events))
+	}
 }
 
 //export uloopTimeoutHandlerProxy
