@@ -107,11 +107,10 @@ func (buf *BlobBuf) AddDouble(name string, val float64) int {
 
 // Head return the front BlobAttr (head filed) of BlobBuf
 func (buf *BlobBuf) Head() *BlobAttr {
-	if buf.head == nil {
-		buf.head = &BlobAttr{
-			ptr: buf.ptr.head,
-		}
+	buf.head = &BlobAttr{
+		ptr: buf.ptr.head,
 	}
+	
 	return buf.head
 }
 
